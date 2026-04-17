@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaguar Rivers | Conservation Impact</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-sidebar: rgba(18, 18, 20, 0.88);
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --accent-gold: #c9a86a;
+            --accent-sand: #c8a27a;
+            --accent-clay: #b7795c;
+            --accent-terracotta: #a86249;
+            --accent-copper: #8f5a3c;
+            --border-subtle: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 24px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            letter-spacing: 0.5px;
+            border-top: 1px solid var(--border-subtle);
+            opacity: 0.8;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .mobile-menu-toggle {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 1300;
+            width: 48px;
+            height: 48px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 12px;
+            background: rgba(18, 18, 20, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+        }
+
+        .mobile-menu-toggle span,
+        .mobile-menu-toggle span::before,
+        .mobile-menu-toggle span::after {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: #fff;
+            border-radius: 2px;
+            position: relative;
+            transition: all 0.25s ease;
+        }
+
+        .mobile-menu-toggle span::before,
+        .mobile-menu-toggle span::after {
+            content: '';
+            position: absolute;
+            left: 0;
+        }
+
+        .mobile-menu-toggle span::before {
+            top: -6px;
+        }
+
+        .mobile-menu-toggle span::after {
+            top: 6px;
+        }
+
+        .mobile-menu-toggle.active span {
+            background: transparent;
+        }
+
+        .mobile-menu-toggle.active span::before {
+            top: 0;
+            transform: rotate(45deg);
+        }
+
+        .mobile-menu-toggle.active span::after {
+            top: 0;
+            transform: rotate(-45deg);
+        }
+
+        .sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 100%;
+            background: var(--bg-sidebar);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border-subtle);
+            padding: 48px 36px;
+            z-index: 1200;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 20px 0 40px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.42);
+            z-index: 1100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .subtitle {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 11px;
+            color: var(--accent-gold);
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .sidebar h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 16px;
+        }
+
+        .sidebar p.description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .sidebar p.description2 {
+            font-size: 10px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 300;
+            padding: 20px;
+        }
+
+        .impact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 28px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .metric-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-title,
+        .layer-control-title {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-bottom: 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .basemap-panel {
+            margin-bottom: 28px;
+            padding-bottom: 28px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .basemap-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .basemap-btn {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .basemap-btn:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.20);
+        }
+
+        .basemap-btn.active {
+            background: rgba(201, 168, 106, 0.18);
+            border-color: rgba(201, 168, 106, 0.45);
+            color: #f6ead8;
+        }
+
+        #layer-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .layer-label {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 300;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-right: 10px;
+        }
+
+        .color-line {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .checkbox-custom {
+            width: 18px;
+            height: 18px;
+            border: 1px solid var(--text-secondary);
+            border-radius: 4px;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        input[type="checkbox"] {
+            display: none;
+        }
+
+        input:checked + .checkbox-custom {
+            background-color: var(--text-primary);
+            border-color: var(--text-primary);
+        }
+
+        input:checked + .checkbox-custom::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid var(--bg-sidebar);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .support-btn {
+            margin-top: 32px;
+            width: 100%;
+            padding: 16px;
+            background-color: var(--accent-gold);
+            color: #000;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .support-btn:hover {
+            background-color: #e2c79d;
+        }
+
+        .status-message {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+
+        .leaflet-control-zoom {
+            border: none !important;
+            margin-right: 36px !important;
+            margin-bottom: 36px !important;
+        }
+
+        .leaflet-control-zoom a {
+            background: rgba(255,255,255,0.1) !important;
+            backdrop-filter: blur(10px);
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            width: 40px !important;
+            height: 40px !important;
+            line-height: 40px !important;
+            border-radius: 50% !important;
+            margin-bottom: 8px !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: rgba(255,255,255,0.2) !important;
+        }
+
+        .leaflet-tooltip,
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: rgba(18, 18, 20, 0.94);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .leaflet-popup-content {
+            margin: 14px 16px;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: flex;
+            }
+
+            .sidebar {
+                width: 320px;
+                max-width: calc(100vw - 32px);
+                padding: 76px 22px 24px 22px;
+                transform: translateX(-110%);
+                box-shadow: 12px 0 30px rgba(0,0,0,0.45);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .sidebar h1 {
+                font-size: 30px;
+            }
+
+            .impact-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+
+            .metric-value {
+                font-size: 24px;
+            }
+
+            .leaflet-control-zoom {
+                margin-right: 16px !important;
+                margin-bottom: 16px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Open menu">
+        <span></span>
+    </button>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="header">
+            <span class="subtitle">Conservation Initiative</span>
+            <h1>Jaguar Rivers</h1>
+            <p class="description">Securing critical watersheds and wildlife corridors across the continent to ensure long-term ecological resilience.</p>
+        </div>
+
+
+        <div class="basemap-panel">
+            <h3 class="section-title">MAP BACKGROUND</h3>
+            <div class="basemap-buttons" id="basemap-buttons"></div>
+        </div>
+
+        <h3 class="layer-control-title">DATA LAYERS</h3>
+        <div id="layer-controls"></div>
+        
+        <div class="sidebar-footer">
+            Diseñado por Matías LB
+        </div>
+
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([-19.0, -61.0], 7);
+
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        const baseMaps = {
+            'Dark': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }),
+            'Light': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }),
+            'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 19
+            })
+        };
+
+        let currentBaseMap = baseMaps['Dark'];
+        currentBaseMap.addTo(map);
+
+        const basemapButtons = document.getElementById('basemap-buttons');
+        const layerControls = document.getElementById('layer-controls');
+        const statusMessage = document.getElementById('status-message');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+
+        const typeStyles = {
+            'ARCA': {
+                color: '#8f5a3c',
+                weight: 2,
+                opacity: 1,
+                fillColor: '#8f5a3c',
+                fillOpacity: 0.18
+            },
+            'BUFFER AREA': {
+                color: '#b7795c',
+                weight: 2,
+                opacity: 1,
+                fillColor: '#b7795c',
+                fillOpacity: 0.16
+            },
+            'STEPPING STONE': {
+                color: '#c8a27a',
+                weight: 2,
+                opacity: 1,
+                fillColor: '#c8a27a',
+                fillOpacity: 0.18
+            }
+        };
+
+        const basinStyle = {
+            color: '#6f8f72',
+            weight: 2,
+            opacity: 1,
+            fillColor: '#6f8f72',
+            fillOpacity: 0.12
+        };
+
+        const fallbackPalette = ['#a86249', '#b7795c', '#c8a27a', '#b08b68', '#9c6f56'];
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function buildPopup(properties) {
+            const nombre = properties?.Nombre || properties?.name || 'Unnamed feature';
+            const tipo = properties?.Tipo || properties?.type || 'No type';
+            const pais = properties?.Pais || properties?.Country || 'N/A';
+            const supHa = properties?.Sup_ha != null ? Number(properties.Sup_ha).toLocaleString() : 'N/A';
+            const supAcres = properties?.Sup_Acres != null ? Number(properties.Sup_Acres).toLocaleString() : 'N/A';
+
+            return `
+                <div style="min-width: 220px; line-height: 1.55;">
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px;">${escapeHtml(nombre)}</div>
+                    <div><strong>Type:</strong> ${escapeHtml(tipo)}</div>
+                    <div><strong>Country:</strong> ${escapeHtml(pais)}</div>
+                    <div><strong>Area (ha):</strong> ${escapeHtml(supHa)}</div>
+                    <div><strong>Area (acres):</strong> ${escapeHtml(supAcres)}</div>
+                </div>
+            `;
+        }
+
+        function getStyleByType(type, index = 0) {
+            if (typeStyles[type]) return typeStyles[type];
+            const color = fallbackPalette[index % fallbackPalette.length];
+            return {
+                color,
+                weight: 2,
+                opacity: 1,
+                fillColor: color,
+                fillOpacity: 0.16
+            };
+        }
+
+        function switchBaseMap(name) {
+            if (currentBaseMap) {
+                map.removeLayer(currentBaseMap);
+            }
+            currentBaseMap = baseMaps[name];
+            currentBaseMap.addTo(map);
+
+            document.querySelectorAll('.basemap-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.map === name);
+            });
+        }
+
+        function toggleSidebar(forceOpen = null) {
+            const shouldOpen = forceOpen !== null ? forceOpen : !sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', shouldOpen);
+            sidebarBackdrop.classList.toggle('active', shouldOpen);
+            mobileMenuToggle.classList.toggle('active', shouldOpen);
+        }
+
+        function closeSidebarOnMobile() {
+            if (window.innerWidth <= 768) {
+                toggleSidebar(false);
+            }
+        }
+
+        mobileMenuToggle.addEventListener('click', () => toggleSidebar());
+        sidebarBackdrop.addEventListener('click', () => toggleSidebar(false));
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                sidebar.classList.remove('open');
+                sidebarBackdrop.classList.remove('active');
+                mobileMenuToggle.classList.remove('active');
+            }
+        });
+
+        Object.keys(baseMaps).forEach((name, index) => {
+            const button = document.createElement('button');
+            button.className = `basemap-btn${index === 0 ? ' active' : ''}`;
+            button.type = 'button';
+            button.textContent = name;
+            button.dataset.map = name;
+            button.addEventListener('click', () => {
+                switchBaseMap(name);
+                closeSidebarOnMobile();
+            });
+            basemapButtons.appendChild(button);
+        });
+
+        function loadExtraLayer(url, layerName, style, sendToBack = false) {
+            return fetch(url)
+                .then(res => {
+                    if (!res.ok) throw new Error(`Error loading ${url}`);
+                    return res.json();
+                })
+                .then(data => {
+                    const layer = L.geoJSON(data, {
+                        style: style,
+                        onEachFeature: (feature, featureLayer) => {
+                            const popupContent = buildPopup(feature.properties || {});
+                            featureLayer.bindPopup(popupContent);
+                            featureLayer.bindTooltip(feature.properties?.Nombre || feature.properties?.name || layerName);
+                        }
+                    }).addTo(map);
+
+                    if (sendToBack && layer.eachLayer) {
+                        layer.eachLayer(l => {
+                            if (l.bringToBack) l.bringToBack();
+                        });
+                    }
+
+                    const controlId = `extra-layer-${layerName.replace(/\s+/g, '-').toLowerCase()}`;
+                    const control = document.createElement('label');
+                    control.className = 'layer-toggle';
+
+                    control.innerHTML = `
+                        <div class="layer-label">
+                            <div class="color-line" style="background-color: ${style.color};"></div>
+                            ${escapeHtml(layerName)}
+                        </div>
+                        <div>
+                            <input type="checkbox" id="${controlId}" checked>
+                            <div class="checkbox-custom"></div>
+                        </div>
+                    `;
+
+                    layerControls.appendChild(control);
+
+                    const checkbox = control.querySelector('input');
+                    checkbox.addEventListener('change', function () {
+                        if (this.checked) {
+                            map.addLayer(layer);
+                            if (sendToBack && layer.eachLayer) {
+                                layer.eachLayer(l => {
+                                    if (l.bringToBack) l.bringToBack();
+                                });
+                            }
+                        } else {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    return layer;
+                })
+                .catch(err => {
+                    console.error(err);
+                });
+        }
+
+        fetch('./zonificacion.geojson')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Unable to load zonificacion.geojson (${response.status})`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const features = Array.isArray(data.features) ? data.features : [];
+                const groupedFeatures = {};
+
+                features.forEach(feature => {
+                    const tipo = feature?.properties?.Tipo || 'UNCLASSIFIED';
+                    if (!groupedFeatures[tipo]) {
+                        groupedFeatures[tipo] = [];
+                    }
+                    groupedFeatures[tipo].push(feature);
+                });
+
+                const groupedTypes = Object.keys(groupedFeatures).sort();
+                const allLayers = [];
+
+
+                layerControls.innerHTML = '';
+
+                groupedTypes.forEach((tipo, index) => {
+                    const style = getStyleByType(tipo, index);
+                    const layer = L.geoJSON({
+                        type: 'FeatureCollection',
+                        features: groupedFeatures[tipo]
+                    }, {
+                        style: style,
+                        onEachFeature: (feature, featureLayer) => {
+                            featureLayer.on({
+                                mouseover: (e) => {
+                                    e.target.setStyle({
+                                        weight: style.weight + 1,
+                                        fillOpacity: Math.min((style.fillOpacity || 0.2) + 0.14, 0.42)
+                                    });
+                                },
+                                mouseout: (e) => {
+                                    layer.resetStyle(e.target);
+                                }
+                            });
+
+                            const popupContent = buildPopup(feature.properties || {});
+                            featureLayer.bindPopup(popupContent);
+                            featureLayer.bindTooltip(feature.properties?.Nombre || tipo);
+                        }
+                    }).addTo(map);
+
+                    allLayers.push(layer);
+
+                    const controlId = `toggle-layer-${index}`;
+                    const control = document.createElement('label');
+                    control.className = 'layer-toggle';
+                    control.innerHTML = `
+                        <div class="layer-label">
+                            <div class="color-line" style="background-color: ${style.color};"></div>
+                            ${escapeHtml(tipo)}
+                        </div>
+                        <div>
+                            <input type="checkbox" id="${controlId}" checked>
+                            <div class="checkbox-custom"></div>
+                        </div>
+                    `;
+                    layerControls.appendChild(control);
+
+                    const checkbox = control.querySelector('input');
+                    checkbox.addEventListener('change', function () {
+                        if (this.checked) {
+                            map.addLayer(layer);
+                        } else {
+                            map.removeLayer(layer);
+                        }
+                    });
+                });
+
+                loadExtraLayer('./basin.geojson', 'BASIN', basinStyle, true)
+                    .then(basinLayer => {
+                        if (basinLayer) {
+                            allLayers.push(basinLayer);
+                        }
+
+                        if (allLayers.length > 0) {
+                            const group = L.featureGroup(allLayers);
+                            map.fitBounds(group.getBounds(), { padding: [30, 30] });
+                        }
+                    });
+
+                statusMessage.textContent = 'GeoJSON loaded successfully. Warm-toned data layers were grouped by the "Tipo" field, and the Basin layer was added as an extra overlay.';
+            })
+            .catch(error => {
+                console.error(error);
+                statusMessage.textContent = 'Error loading zonificacion.geojson. Make sure the HTML file, zonificacion.geojson, and basin.geojson are in the same folder.';
+            });
+    </script>
+</body>
+</html>
